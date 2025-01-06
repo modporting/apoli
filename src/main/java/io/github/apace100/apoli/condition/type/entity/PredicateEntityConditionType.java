@@ -9,9 +9,9 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.world.ServerWorld;
@@ -45,10 +45,10 @@ public class PredicateEntityConditionType extends EntityConditionType {
         }
 
         LootCondition lootCondition = serverWorld.getServer().getReloadableRegistries()
-            .getRegistryManager()
-            .get(RegistryKeys.PREDICATE)
-            .getOrThrow(predicate);
-        LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder(serverWorld)
+            .createRegistryLookup()
+            .getOrThrow(RegistryKeys.PREDICATE)
+            .getOrThrow(predicate).value();
+        LootWorldContext lootContextParameterSet = new LootWorldContext.Builder(serverWorld)
             .add(LootContextParameters.ORIGIN, entity.getPos())
             .addOptional(LootContextParameters.THIS_ENTITY, entity)
             .build(LootContextTypes.COMMAND);

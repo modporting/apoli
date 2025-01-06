@@ -4,6 +4,7 @@ import io.github.apace100.apoli.access.ReplacingLootContext;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextType;
+import net.minecraft.util.context.ContextType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -14,18 +15,18 @@ import java.util.Set;
 public class LootContextMixin implements ReplacingLootContext {
 
     @Unique
-    private LootContextType apoli$lootContextType;
+    private ContextType apoli$lootContextType;
 
     @Unique
     private final Set<LootTable> apoli$replacedTables = new HashSet<>();
 
     @Override
-    public void apoli$setType(LootContextType type) {
+    public void apoli$setType(ContextType type) {
         apoli$lootContextType = type;
     }
 
     @Override
-    public LootContextType apoli$getType() {
+    public ContextType apoli$getType() {
         return apoli$lootContextType;
     }
 

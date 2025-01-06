@@ -18,9 +18,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.inventory.StackReference;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.consume.UseAction;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +39,7 @@ public class EdibleItemPowerType extends PowerType implements Prioritized<Edible
             .add("food_component", SerializableDataTypes.FOOD_COMPONENT)
             .add("result_stack", SerializableDataTypes.ITEM_STACK.optional(), Optional.empty())
             .add("consume_animation", SerializableDataType.enumValue(UseAction.class), UseAction.EAT)
-            .add("consume_sound", SerializableDataTypes.SOUND_EVENT, SoundEvents.ENTITY_GENERIC_EAT)
+            .add("consume_sound", SerializableDataTypes.SOUND_EVENT, SoundEvents.ENTITY_GENERIC_EAT.value())
             .add("priority", SerializableDataTypes.INT, 0),
         (data, condition) -> new EdibleItemPowerType(
             data.get("entity_action"),

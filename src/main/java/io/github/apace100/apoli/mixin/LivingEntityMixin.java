@@ -17,6 +17,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -280,7 +281,12 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
 
     }
-
+    @Inject(method = "canEquip", at = @At(value = "RETURN"), cancellable = true)
+    private void apoli$preventArmorEquipping(ItemStack stack, EquipmentSlot slot, CallbackInfoReturnable<Boolean> cir) {
+        if(PowerHolderComponent.hasPowerType((LivingEntity) (Object) this, RestrictArmorPowerType.class, p -> p.doesRestrict(stack, slot))){
+            cir.setReturnValue(false);
+        }
+    }
     @Unique
     private boolean prevPowderSnowState = false;
 

@@ -1,33 +1,38 @@
 package io.github.apace100.apoli.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.github.apace100.apoli.util.ArmPoseReference;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.render.entity.model.AnimalModel;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.entity.model.ModelWithArms;
 import net.minecraft.client.render.entity.model.ModelWithHead;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
 
 @Environment(EnvType.CLIENT)
 @Mixin(BipedEntityModel.class)
-public abstract class BipedEntityModelMixin<T extends LivingEntity> extends AnimalModel<T> implements ModelWithArms, ModelWithHead {
+public abstract class BipedEntityModelMixin<T extends BipedEntityRenderState> extends EntityModel<T> implements ModelWithArms, ModelWithHead  {
 
-    @ModifyExpressionValue(method = "positionRightArm", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/entity/model/BipedEntityModel;rightArmPose:Lnet/minecraft/client/render/entity/model/BipedEntityModel$ArmPose;"))
-    private BipedEntityModel.ArmPose apoli$overrideRightArmPose(BipedEntityModel.ArmPose original, T entity) {
-        return ArmPoseReference
-            .getArmPose(entity)
-            .orElse(original);
+    protected BipedEntityModelMixin(ModelPart root) {
+        super(root);
     }
 
-    @ModifyExpressionValue(method = "positionLeftArm", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/entity/model/BipedEntityModel;leftArmPose:Lnet/minecraft/client/render/entity/model/BipedEntityModel$ArmPose;"))
-    private BipedEntityModel.ArmPose apoli$overrideLeftArmPose(BipedEntityModel.ArmPose original, T entity) {
-        return ArmPoseReference
-            .getArmPose(entity)
-            .orElse(original);
+    @Inject(method = "positionRightArm", at = @At(value = "HEAD"))
+    private void apoli$overrideRightArmPose(T state, BipedEntityModel.ArmPose armPose, CallbackInfo ci, @Local(argsOnly = true) LocalRef<BipedEntityModel.ArmPose> pose) {
+        pose.set(ArmPoseReference.getArmPose(state).orElse(pose.get()));
+    }
+
+    @Inject(method = "positionLeftArm", at = @At(value = "HEAD"))
+    private void apoli$overrideLeftArmPose(T state, BipedEntityModel.ArmPose armPose, CallbackInfo ci, @Local(argsOnly = true) LocalRef<BipedEntityModel.ArmPose> pose) {
+        pose.set(ArmPoseReference.getArmPose(state).orElse(pose.get()));
     }
 
 }

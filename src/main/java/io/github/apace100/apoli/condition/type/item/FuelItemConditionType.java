@@ -8,7 +8,7 @@ import io.github.apace100.apoli.data.TypedDataObjectFactory;
 import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.fabricmc.fabric.api.registry.FuelRegistry;
+import net.fabricmc.fabric.mixin.content.registry.FuelRegistryMixin;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +40,7 @@ public class FuelItemConditionType extends ItemConditionType {
 
 	@Override
 	public boolean test(World world, ItemStack stack) {
-		return Optional.ofNullable(FuelRegistry.INSTANCE.get(stack.getItem()))
+		return Optional.of(world.getFuelRegistry().getFuelTicks(stack))
 			.map(value -> comparison.compare(value, compareTo))
 			.orElse(false);
 	}

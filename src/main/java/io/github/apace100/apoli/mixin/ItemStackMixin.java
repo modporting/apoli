@@ -13,6 +13,7 @@ import io.github.apace100.apoli.util.PriorityPhase;
 import io.github.apace100.apoli.util.StackClickPhase;
 import net.fabricmc.fabric.api.item.v1.FabricItemStack;
 import net.minecraft.component.ComponentHolder;
+import net.minecraft.component.ComponentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -20,12 +21,16 @@ import net.minecraft.inventory.StackReference;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
+import net.minecraft.item.consume.UseAction;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.UseAction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,6 +53,8 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
 
     @Shadow
     public abstract ItemStack copy();
+
+    @Shadow @Nullable public abstract <T> T remove(ComponentType<? extends T> type);
 
     @Unique
     private Entity apoli$holdingEntity;
@@ -87,13 +94,13 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
 
     }
 
-    @WrapOperation(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;use(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/TypedActionResult;"))
-    private TypedActionResult<ItemStack> apoli$onItemUse(Item item, World world, PlayerEntity user, Hand hand, Operation<TypedActionResult<ItemStack>> original) {
+    @WrapOperation(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;use(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;"))
+    private ActionResult apoli$onItemUse(Item item, World world, PlayerEntity user, Hand hand, Operation<ActionResult> original) {
 
         //  region  Prevent item use
         ItemStack thisAsStack = (ItemStack) (Object) this;
         if (PowerHolderComponent.hasPowerType(user, PreventItemUsePowerType.class, piup -> piup.doesPrevent(thisAsStack))) {
-            return TypedActionResult.fail(thisAsStack);
+            return ActionResult.FAIL;
         }
         //  endregion
 
@@ -114,11 +121,11 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
             .map(fc -> user.canConsume(fc.canAlwaysEat()))
             .orElse(false);
 
-        TypedActionResult<ItemStack> action = canConsumeCustomFood
+        ActionResult action = canConsumeCustomFood
             ? ItemUsage.consumeHeldItem(world, user, hand)
             : original.call(useStack.getItem(), world, user, hand);
 
-        if (!action.getResult().isAccepted()) {
+        if (!action.isAccepted()) {
             return action;
         }
         //  endregion
@@ -155,8 +162,8 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
 
     }
 
-    @WrapOperation(method = "onStoppedUsing", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;onStoppedUsing(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/LivingEntity;I)V"))
-    private void apoli$actionOnItemStoppedUsing(Item item, ItemStack stack, World world, LivingEntity user, int remainingUseTicks, Operation<Void> original, @Share("stoppedUsingStackReference") LocalRef<StackReference> sharedStoppedUsingStackReference) {
+    @WrapOperation(method = "onStoppedUsing", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;onStoppedUsing(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/LivingEntity;I)Z"))
+    private boolean apoli$actionOnItemStoppedUsing(Item item, ItemStack stack, World world, LivingEntity user, int remainingUseTicks, Operation<Void> original, @Share("stoppedUsingStackReference") LocalRef<StackReference> sharedStoppedUsingStackReference) {
 
         ActionOnItemUsePowerType.TriggerType triggerType = ActionOnItemUsePowerType.TriggerType.STOP;
 
@@ -173,6 +180,7 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
             ActionOnItemUsePowerType.executeActions(user, stoppedUsingStackReference, stoppedUsingStack, triggerType, PriorityPhase.AFTER);
         }
 
+        return false;
     }
 
     @WrapOperation(method = "finishUsing", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;finishUsing(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/LivingEntity;)Lnet/minecraft/item/ItemStack;"))
@@ -187,7 +195,15 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
 
         //  region  Edible item consumption effects
         finishUsingStackRef.set(EdibleItemPowerType.get(finishUsingStack, user)
-            .map(p -> user.eatFood(world, stack, p.getFoodComponent()))
+            .map(p -> {
+                Random random = user.getRandom();
+                world.playSound(null, user.getX(), user.getY(), user.getZ(), p.getConsumeSoundEvent(), SoundCategory.NEUTRAL, 1.0F, random.nextTriangular(1.0F, 0.4F));
+                if(user instanceof PlayerEntity player){
+                    player.getHungerManager().eat(p.getFoodComponent());
+                    world.playSound((PlayerEntity)null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.5F, MathHelper.nextBetween(random, 0.9F, 1.0F));
+                }
+                return p.executeItemActions(finishUsingStackRef).get();
+            })
             .orElseGet(() -> original.call(finishUsingStack.getItem(), finishUsingStack, world, user)));
         //  endregion
 
@@ -202,20 +218,6 @@ public abstract class ItemStackMixin implements ComponentHolder, EntityLinkedIte
     private UseAction apoli$replaceUseAction(UseAction original) {
         return EdibleItemPowerType.get((ItemStack) (Object) this)
             .map(EdibleItemPowerType::getConsumeAnimation)
-            .orElse(original);
-    }
-
-    @ModifyReturnValue(method = "getEatSound", at = @At("RETURN"))
-    private SoundEvent apoli$replaceEatingSound(SoundEvent original) {
-        return EdibleItemPowerType.get((ItemStack) (Object) this)
-            .map(EdibleItemPowerType::getConsumeSoundEvent)
-            .orElse(original);
-    }
-
-    @ModifyReturnValue(method = "getDrinkSound", at = @At("RETURN"))
-    private SoundEvent apoli$replaceDrinkingSound(SoundEvent original) {
-        return EdibleItemPowerType.get((ItemStack) (Object) this)
-            .map(EdibleItemPowerType::getConsumeSoundEvent)
             .orElse(original);
     }
 

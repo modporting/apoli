@@ -4,14 +4,14 @@ import com.google.common.collect.BiMap;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.mixin.LootContextTypesAccessor;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootContextType;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.context.ContextType;
 
 public class ApoliLootContextTypes {
 
-    public static final LootContextType ANY = register(
+    public static final ContextType ANY = register(
         Apoli.identifier("any"),
-        LootContextType.create()
+            new ContextType.Builder()
             .allow(LootContextParameters.THIS_ENTITY)
             .allow(LootContextParameters.LAST_DAMAGE_PLAYER)
             .allow(LootContextParameters.DAMAGE_SOURCE)
@@ -26,10 +26,10 @@ public class ApoliLootContextTypes {
 
     private ApoliLootContextTypes() {}
 
-    private static LootContextType register(Identifier id, LootContextType.Builder lootContextTypeBuilder) {
+    private static ContextType register(Identifier id, ContextType.Builder lootContextTypeBuilder) {
 
-        LootContextType lootContextType = lootContextTypeBuilder.build();
-        BiMap<Identifier, LootContextType> idAndLootContextTypeMap = LootContextTypesAccessor.getMap();
+        ContextType lootContextType = lootContextTypeBuilder.build();
+        BiMap<Identifier, ContextType> idAndLootContextTypeMap = LootContextTypesAccessor.getMap();
 
         if (idAndLootContextTypeMap.containsKey(id)) {
             throw new IllegalStateException("Loot table parameter set \"" + id + "\" is already registered!");

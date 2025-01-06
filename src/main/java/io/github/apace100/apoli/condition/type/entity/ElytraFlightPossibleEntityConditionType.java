@@ -4,14 +4,16 @@ import io.github.apace100.apoli.condition.ConditionConfiguration;
 import io.github.apace100.apoli.condition.type.EntityConditionType;
 import io.github.apace100.apoli.condition.type.EntityConditionTypes;
 import io.github.apace100.apoli.data.TypedDataObjectFactory;
+import io.github.apace100.apoli.mixin.LivingEntityAccessor;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.fabric.api.entity.event.v1.EntityElytraEvents;
+import net.minecraft.component.ComponentType;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +55,7 @@ public class ElytraFlightPossibleEntityConditionType extends EntityConditionType
         if (checkState) {
             checked = true;
             state = !living.isOnGround()
-                && !living.isFallFlying()
+                && !living.isGliding()
                 && !living.isTouchingWater()
                 && !living.hasStatusEffect(StatusEffects.LEVITATION);
         }
@@ -61,7 +63,7 @@ public class ElytraFlightPossibleEntityConditionType extends EntityConditionType
         if (checkAbility) {
             checked = true;
             ItemStack equippedChestStack = living.getEquippedStack(EquipmentSlot.CHEST);
-            ability = (equippedChestStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(equippedChestStack) || EntityElytraEvents.CUSTOM.invoker().useCustomElytra(living, false))
+            ability = (((LivingEntityAccessor) living).invokeCanGlide() || EntityElytraEvents.CUSTOM.invoker().useCustomElytra(living, false))
                 && EntityElytraEvents.ALLOW.invoker().allowElytraFlight(living);
         }
 

@@ -1,11 +1,12 @@
 package io.github.apace100.apoli.access;
 
-import net.minecraft.loot.context.LootContextType;
+
+import net.minecraft.util.context.ContextType;
 
 public interface ReplacingLootContextParameterSet {
 
-    void apoli$setType(LootContextType type);
+    void apoli$setType(ContextType type);
 
-    LootContextType apoli$getType();
+    ContextType apoli$getType();
 
 }

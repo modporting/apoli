@@ -1,6 +1,5 @@
 package io.github.apace100.apoli.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.access.PowerCraftingInventory;
@@ -8,18 +7,14 @@ import io.github.apace100.apoli.access.ScreenHandlerUsabilityOverride;
 import io.github.apace100.apoli.power.type.ModifyCraftingPowerType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.input.CraftingRecipeInput;
-import net.minecraft.screen.AbstractRecipeScreenHandler;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.*;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -34,15 +29,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.LinkedList;
 
 @Mixin(CraftingScreenHandler.class)
-public abstract class CraftingScreenHandlerMixin extends AbstractRecipeScreenHandler<CraftingRecipeInput, CraftingRecipe> implements ScreenHandlerUsabilityOverride {
+public abstract class CraftingScreenHandlerMixin extends AbstractCraftingScreenHandler implements ScreenHandlerUsabilityOverride {
 
-    @Shadow
-    @Final
-    private RecipeInputInventory input;
 
     @Shadow @Final private PlayerEntity player;
     @Unique
     private boolean apoli$canUse = false;
+
+    public CraftingScreenHandlerMixin(ScreenHandlerType<?> type, int syncId, int width, int height) {
+        super(type, syncId, width, height);
+    }
 
     @Override
     public boolean apoli$canUse() {
@@ -54,23 +50,18 @@ public abstract class CraftingScreenHandlerMixin extends AbstractRecipeScreenHan
         this.apoli$canUse = canUse;
     }
 
-    private CraftingScreenHandlerMixin(ScreenHandlerType screenHandlerType, int i) {
-        super(screenHandlerType, i);
-    }
 
-    @ModifyExpressionValue(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At(value = "NEW", target = "(Lnet/minecraft/screen/ScreenHandler;II)Lnet/minecraft/inventory/CraftingInventory;"))
-    private CraftingInventory apoli$cachePlayerToCraftingInventory(CraftingInventory original, int syncId, PlayerInventory playerInventory) {
+    @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At(value = "TAIL"))
+    private void apoli$cachePlayerToCraftingInventory(int syncId, PlayerInventory playerInventory, ScreenHandlerContext context, CallbackInfo ci) {
 
-        if (original instanceof PowerCraftingInventory pci) {
+        if (craftingInventory instanceof PowerCraftingInventory pci) {
             pci.apoli$setPlayer(playerInventory.player);
         }
 
-        return original;
-
     }
 
-    @Inject(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/RecipeManager;getFirstMatch(Lnet/minecraft/recipe/RecipeType;Lnet/minecraft/recipe/input/RecipeInput;Lnet/minecraft/world/World;Lnet/minecraft/recipe/RecipeEntry;)Ljava/util/Optional;"))
-    private static void apoli$clearPowerCraftingInventory(ScreenHandler handler, World world, PlayerEntity player, RecipeInputInventory craftingInventory, CraftingResultInventory resultInventory, @Nullable RecipeEntry<CraftingRecipe> recipe, CallbackInfo ci) {
+    @Inject(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/ServerRecipeManager;getFirstMatch(Lnet/minecraft/recipe/RecipeType;Lnet/minecraft/recipe/input/RecipeInput;Lnet/minecraft/world/World;Lnet/minecraft/recipe/RecipeEntry;)Ljava/util/Optional;"))
+    private static void apoli$clearPowerCraftingInventory(ScreenHandler handler, ServerWorld world, PlayerEntity player, RecipeInputInventory craftingInventory, CraftingResultInventory resultInventory, RecipeEntry<CraftingRecipe> recipe, CallbackInfo ci) {
 
         if (craftingInventory instanceof PowerCraftingInventory pci) {
             pci.apoli$setPowerTypes(new LinkedList<>());
@@ -85,7 +76,7 @@ public abstract class CraftingScreenHandlerMixin extends AbstractRecipeScreenHan
 
     @ModifyVariable(method = "quickMove", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/CraftingScreenHandler;insertItem(Lnet/minecraft/item/ItemStack;IIZ)Z", ordinal = 0), ordinal = 1)
     private ItemStack apoli$modifyResultStackOnQuickMove(ItemStack original, PlayerEntity player, int slotId, @Local Slot slot) {
-        return ModifyCraftingPowerType.executeAfterCraftingAction(player, input, slot, original);
+        return ModifyCraftingPowerType.executeAfterCraftingAction(player, craftingInventory, slot, original);
     }
 
 }

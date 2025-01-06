@@ -62,6 +62,11 @@ repositories {
 	maven {
 		url "https://maven.ryanliptak.com/"
 	}
+
+	maven {
+		name = 'Modporting ports'
+		url = 'https://maven.riftrealms.de/ports'
+	}
 }
 
 loom {

@@ -4,6 +4,7 @@ import io.github.apace100.apoli.access.ModifiedPoseHolder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import net.minecraft.entity.Entity;
 
 import java.util.Optional;
@@ -50,6 +51,39 @@ public enum ArmPoseReference {
                     BipedEntityModel.ArmPose.CROSSBOW_HOLD;
                 case CROSSBOW_CHARGE ->
                     BipedEntityModel.ArmPose.CROSSBOW_CHARGE;
+            });
+        }
+
+    }
+    @Environment(EnvType.CLIENT)
+    public static Optional<BipedEntityModel.ArmPose> getArmPose(BipedEntityRenderState state) {
+
+        if (!(state instanceof ModifiedPoseHolder poseHolder)) {
+            return Optional.empty();
+        }
+
+        else {
+            return poseHolder.apoli$getModifiedArmPose().map(armPoseReference -> switch (armPoseReference) {
+                case EMPTY ->
+                        BipedEntityModel.ArmPose.EMPTY;
+                case ITEM ->
+                        BipedEntityModel.ArmPose.ITEM;
+                case BLOCK ->
+                        BipedEntityModel.ArmPose.BLOCK;
+                case BRUSH ->
+                        BipedEntityModel.ArmPose.BRUSH;
+                case SPYGLASS ->
+                        BipedEntityModel.ArmPose.SPYGLASS;
+                case TOOT_HORN ->
+                        BipedEntityModel.ArmPose.TOOT_HORN;
+                case THROW_SPEAR ->
+                        BipedEntityModel.ArmPose.THROW_SPEAR;
+                case BOW_AND_ARROW ->
+                        BipedEntityModel.ArmPose.BOW_AND_ARROW;
+                case CROSSBOW_HOLD ->
+                        BipedEntityModel.ArmPose.CROSSBOW_HOLD;
+                case CROSSBOW_CHARGE ->
+                        BipedEntityModel.ArmPose.CROSSBOW_CHARGE;
             });
         }
 

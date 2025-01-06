@@ -33,10 +33,8 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.Colors;
+import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -103,6 +101,8 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity, Mo
 
     @Shadow public abstract EntityType<?> getType();
 
+    @Shadow public abstract boolean isWet();
+
     @ModifyReturnValue(method = "isFireImmune", at = @At("RETURN"))
     private boolean apoli$makeFullyFireImmune(boolean original) {
         return original
@@ -126,22 +126,30 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity, Mo
         PowerHolderComponent.withPowerTypes((Entity) (Object) this, ActionOnLandPowerType.class, p -> true, ActionOnLandPowerType::executeAction);
     }
 
-    @ModifyReturnValue(method = "isInvulnerableTo", at = @At("RETURN"))
+    @ModifyReturnValue(method = "isAlwaysInvulnerableTo", at = @At("RETURN"))
     private boolean apoli$makeEntitiesInvulnerable(boolean original, DamageSource source) {
-        return original
-            || PowerHolderComponent.hasPowerType((Entity) (Object) this, InvulnerabilityPowerType.class, p -> p.doesApply(source));
+        if (!original) {
+            PowerHolderComponent.hasPowerType((Entity) (Object) this, InvulnerabilityPowerType.class, p -> p.doesApply(source));
+        }
+        return true;
     }
+    //TODO FIX
+    /*@Inject(method = "checkWaterState", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;extinguish()V"), cancellable = true)
+    private void apoli$preventExtinguishingFromPowerSwimming(CallbackInfo ci) {
+        if (isWet()){
+            if (this.isSwimming()) {
+                PowerHolderComponent.hasPowerType((Entity) (Object) this, SwimmingPowerType.class);
+            }
+        }
 
-    @ModifyExpressionValue(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isWet()Z"))
-    private boolean apoli$preventExtinguishingFromPowerSwimming(boolean original) {
-        return original
-            && !(this.isSwimming() && PowerHolderComponent.hasPowerType((Entity) (Object) this, SwimmingPowerType.class));
-    }
+    }*/
 
     @ModifyReturnValue(method = "isInvisible", at = @At("RETURN"))
     private boolean apoli$invisibility(boolean original) {
-        return original
-            || PowerHolderComponent.hasPowerType((Entity) (Object) this, InvisibilityPowerType.class);
+        if (!original) {
+            PowerHolderComponent.hasPowerType((Entity) (Object) this, InvisibilityPowerType.class);
+        }
+        return true;
     }
 
     @WrapOperation(method = "isInvisibleTo", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isInvisible()Z"))
@@ -278,7 +286,7 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity, Mo
         }
 
         return colorAmount > 0
-            ? MathHelper.packRgb(red / colorAmount, green / colorAmount, blue / colorAmount)
+            ? ColorHelper.fromFloats(1f, red / colorAmount, green / colorAmount, blue / colorAmount)
             : original;
 
     }

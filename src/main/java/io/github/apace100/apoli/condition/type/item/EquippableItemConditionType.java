@@ -6,8 +6,8 @@ import io.github.apace100.apoli.condition.type.ItemConditionTypes;
 import io.github.apace100.apoli.data.TypedDataObjectFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
-import net.minecraft.item.Equipment;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
@@ -34,9 +34,10 @@ public class EquippableItemConditionType extends ItemConditionType {
 
     @Override
     public boolean test(World world, ItemStack stack) {
-        Equipment equipment = Equipment.fromStack(stack);
-        return equipment != null
-            && equipmentSlot.map(slot -> slot.matches(equipment.getSlotType())).orElse(true);
+        if(stack.contains(DataComponentTypes.EQUIPPABLE)){
+            return equipmentSlot.map(slot -> slot.matches(stack.get(DataComponentTypes.EQUIPPABLE).slot())).orElse(true);
+        }
+        return false;
     }
 
     @Override

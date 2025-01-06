@@ -11,8 +11,8 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.inventory.StackReference;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.loot.function.LootFunction;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -49,11 +49,11 @@ public class ModifyItemActionType extends ItemActionType {
 
         ItemStack oldStack = stackReference.get();
         LootFunction itemModifier = serverWorld.getServer().getReloadableRegistries()
-            .getRegistryManager()
-            .get(RegistryKeys.ITEM_MODIFIER)
-            .getOrThrow(modifier);
+            .createRegistryLookup()
+            .getOrThrow(RegistryKeys.ITEM_MODIFIER)
+            .getOrThrow(modifier).value();
 
-        LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder(serverWorld)
+        LootWorldContext lootContextParameterSet = new LootWorldContext.Builder(serverWorld)
             .add(LootContextParameters.ORIGIN, serverWorld.getSpawnPos().toCenterPos())
             .add(LootContextParameters.TOOL, oldStack)
             .addOptional(LootContextParameters.THIS_ENTITY, ((EntityLinkedItemStack) oldStack).apoli$getEntity())

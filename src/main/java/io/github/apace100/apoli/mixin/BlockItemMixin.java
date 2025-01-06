@@ -15,7 +15,6 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -109,11 +108,11 @@ public class BlockItemMixin {
 
     }
 
-    @WrapOperation(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;use(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/TypedActionResult;"))
-    private TypedActionResult<ItemStack> apoli$preventItemUseIfFoodBlockItem(BlockItem instance, World world, PlayerEntity user, Hand hand, Operation<TypedActionResult<ItemStack>> original) {
+    @WrapOperation(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;use(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;"))
+    private ActionResult apoli$preventItemUseIfFoodBlockItem(BlockItem instance, World world, PlayerEntity user, Hand hand, Operation<ActionResult> original) {
         ItemStack handStack = user.getStackInHand(hand);
         return PowerHolderComponent.hasPowerType(user, PreventItemUsePowerType.class, p -> p.doesPrevent(handStack))
-            ? TypedActionResult.fail(handStack)
+            ? ActionResult.FAIL
             : original.call(instance, world, user, hand);
     }
 

@@ -13,13 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LootContext.Builder.class)
 public class LootContextBuilderMixin {
-    @Shadow
-    @Final
-    private LootContextParameterSet parameters;
+
 
     @Inject(method = "build", at = @At("RETURN"))
     private void setLootContextType(CallbackInfoReturnable<LootContext> cir) {
-        ReplacingLootContextParameterSet rlcps = (ReplacingLootContextParameterSet) parameters;
+        ReplacingLootContextParameterSet rlcps = (ReplacingLootContextParameterSet) ;
 
         ReplacingLootContext rlc = (ReplacingLootContext) cir.getReturnValue();
         rlc.apoli$setType(rlcps.apoli$getType());
