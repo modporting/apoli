@@ -12,10 +12,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootContextType;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.ReloadableRegistries;
+import net.minecraft.util.context.ContextType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -57,7 +57,7 @@ public class LootTableMixin implements KeyableLootTable {
         Entity thisEntity = context.get(LootContextParameters.THIS_ENTITY);
         Entity powerHolder = thisEntity;
 
-        LootContextType contextType = replacingContext.apoli$getType();
+        ContextType contextType = replacingContext.apoli$getType();
         if (contextType == LootContextTypes.FISHING) {
 
             if (thisEntity instanceof FishingBobberEntity fishingBobberEntity) {

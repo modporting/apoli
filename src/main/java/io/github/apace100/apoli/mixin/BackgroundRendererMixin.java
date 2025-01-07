@@ -1,10 +1,10 @@
 package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.type.ModifyCameraSubmersionTypePowerType;
-import io.github.apace100.apoli.power.type.NightVisionPowerType;
 import io.github.apace100.apoli.power.type.PhasingPowerType;
 import io.github.apace100.apoli.util.MiscUtil;
 import net.fabricmc.api.EnvType;
@@ -12,15 +12,13 @@ import net.fabricmc.api.Environment;
 import net.minecraft.block.enums.CameraSubmersionType;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.render.Fog;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.List;
@@ -29,13 +27,9 @@ import java.util.List;
 @Environment(EnvType.CLIENT)
 public abstract class BackgroundRendererMixin {
 
-    @Shadow private static float red;
-
-    @Shadow private static float green;
-
-    @Shadow private static float blue;
-
-    @ModifyExpressionValue(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z", ordinal = 0))
+//TODO Move to the correct mixin - Farpo
+/*
+    @ModifyExpressionValue(method = "", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;hasStatusEffect(Lnet/minecraft/registry/entry/RegistryEntry;)Z", ordinal = 0))
     private static boolean apoli$nightVisionProxy(boolean original, @Local Entity cameraFocusedEntity) {
         return original
             || PowerHolderComponent.hasPowerType(cameraFocusedEntity, NightVisionPowerType.class);
@@ -50,6 +44,7 @@ public abstract class BackgroundRendererMixin {
             .map(ModifyCameraSubmersionTypePowerType::getNewType)
             .orElse(original);
     }
+*/
 
     @ModifyExpressionValue(method = "applyFog", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;getSubmersionType()Lnet/minecraft/block/enums/CameraSubmersionType;"))
     private static CameraSubmersionType apoli$modifyCameraSubmersionTypeFog(CameraSubmersionType original, Camera camera) {
@@ -61,21 +56,20 @@ public abstract class BackgroundRendererMixin {
             .orElse(original);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/BackgroundRenderer;getFogModifier(Lnet/minecraft/entity/Entity;F)Lnet/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier;"))
-    private static void modifyFogColor(Camera camera, float tickDelta, ClientWorld world, int viewDistance, float skyDarkness, CallbackInfo ci) {
+    @ModifyReturnValue(method = "getFogColor", at = @At(value = "RETURN"))
+    private static Vector4f modifyFogColor(Vector4f original, Camera camera) {
         if(camera.getFocusedEntity() instanceof LivingEntity) {
             if(PowerHolderComponent.getPowerTypes(camera.getFocusedEntity(), PhasingPowerType.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPowerType.RenderType.BLINDNESS)) {
-                if(MiscUtil.getInWallBlockState((PlayerEntity)camera.getFocusedEntity()) != null) {
-                    red = 0f;
-                    green = 0f;
-                    blue = 0f;
+                if(MiscUtil.getInWallBlockState(camera.getFocusedEntity()) != null) {
+                    return new Vector4f(0, 0, 0, original.w);
                 }
             }
         }
+        return original;
     }
 
-    @Inject(method = "applyFog", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFogStart(F)V", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD)
-    private static void modifyFogData(Camera camera, BackgroundRenderer.FogType fogType, float viewDistance, boolean thickFog, float tickDelta, CallbackInfo ci, CameraSubmersionType cameraSubmersionType, Entity entity, BackgroundRenderer.FogData fogData) {
+    @ModifyReturnValue(method = "applyFog", at = @At(value = "TAIL"))
+    private static Fog modifyFogData(Fog original, Camera camera, BackgroundRenderer.FogType fogType, Vector4f color, @Local BackgroundRenderer.FogData fogData) {
         if(camera.getFocusedEntity() instanceof LivingEntity) {
             List<PhasingPowerType> phasings = PowerHolderComponent.getPowerTypes(camera.getFocusedEntity(), PhasingPowerType.class);
             if(phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPowerType.RenderType.BLINDNESS)) {
@@ -88,8 +82,10 @@ public abstract class BackgroundRendererMixin {
                         fogData.fogStart = view * 0.25f;
                         fogData.fogEnd = view;
                     }
+                    return new Fog(fogData.fogStart, fogData.fogEnd, fogData.fogShape, color.x, color.y, color.z, color.w);
                 }
             }
         }
+        return original;
     }
 }

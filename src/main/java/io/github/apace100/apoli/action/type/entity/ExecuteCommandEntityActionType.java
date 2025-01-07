@@ -41,14 +41,14 @@ public class ExecuteCommandEntityActionType extends EntityActionType {
         }
 
         MinecraftServer server = serverWorld.getServer();
-        ServerCommandSource commandSource = entity.getCommandSource()
+        ServerCommandSource commandSource = entity.getCommandSource(serverWorld)
             .withLevel(Apoli.config.executeCommand.permissionLevel)
             .withOutput(CommandOutput.DUMMY);
 
         if (Apoli.config.executeCommand.showOutput) {
 
             CommandOutput output = entity instanceof ServerPlayerEntity serverPlayer && serverPlayer.networkHandler != null
-                ? serverPlayer
+                ? serverPlayer.getCommandOutput()
                 : server;
 
             commandSource = commandSource.withOutput(output);

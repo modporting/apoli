@@ -53,7 +53,7 @@ public abstract class LivingEntityRendererMixin <T extends LivingEntity, S exten
     private boolean apoli$preventOutlineWhenInvisible(boolean original, S state) {
         return !PowerHolderComponent.hasPowerType((PowerHoldingEntityRenderState) state, InvisibilityPowerType.class, Predicate.not(InvisibilityPowerType::shouldRenderOutline)) && original;
     }
-
+    //TODO Figure out what's wrong - Farpo
     @WrapOperation(method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;getRenderLayer(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;ZZZ)Lnet/minecraft/client/render/RenderLayer;"))
     private RenderLayer apoli$useTranslucentRenderLayerWhenVisible(LivingEntityRenderer instance, S state, boolean showBody, boolean translucent, boolean showOutline, Operation<RenderLayer> original) {
         return original.call(instance, state, showBody, translucent || showBody && PowerHolderComponent.hasPowerType((PowerHoldingEntityRenderState) state, ModelColorPowerType.class, ModelColorPowerType::isTranslucent), showOutline);

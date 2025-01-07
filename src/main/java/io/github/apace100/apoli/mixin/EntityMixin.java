@@ -133,7 +133,7 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity, Mo
         }
         return true;
     }
-    //TODO FIX
+    //TODO Find correct mixin - Farpo
     /*@Inject(method = "checkWaterState", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;extinguish()V"), cancellable = true)
     private void apoli$preventExtinguishingFromPowerSwimming(CallbackInfo ci) {
         if (isWet()){

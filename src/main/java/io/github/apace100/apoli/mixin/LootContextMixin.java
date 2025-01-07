@@ -3,7 +3,6 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.access.ReplacingLootContext;
 import net.minecraft.loot.LootTable;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextType;
 import net.minecraft.util.context.ContextType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

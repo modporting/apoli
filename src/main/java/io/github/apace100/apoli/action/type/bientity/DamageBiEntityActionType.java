@@ -13,6 +13,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.world.ServerWorld;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -52,10 +53,10 @@ public class DamageBiEntityActionType extends BiEntityActionType {
     @Override
 	protected void execute(Entity actor, Entity target) {
 
-        if (actor != null && target != null) {
+        if (actor != null && target != null && target.getWorld() instanceof ServerWorld world) {
             this.amount
                 .or(() -> getModifiedAmount(actor, target))
-                .ifPresent(amount -> target.damage(actor.getDamageSources().create(damageType, actor), amount));
+                .ifPresent(amount -> target.damage(world, actor.getDamageSources().create(damageType, actor), amount));
         }
 
     }

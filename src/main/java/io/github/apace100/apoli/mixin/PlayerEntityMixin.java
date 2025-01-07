@@ -31,6 +31,7 @@ import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Nameable;
@@ -55,7 +56,7 @@ import java.util.List;
 public abstract class PlayerEntityMixin extends LivingEntity implements Nameable, CommandOutput, JumpingEntity, ModifiedPoseHolder {
 
     @Shadow
-    public abstract boolean damage(DamageSource source, float amount);
+    public abstract boolean damage(ServerWorld world, DamageSource source, float amount);
 
     @Shadow
     public abstract ItemStack getEquippedStack(EquipmentSlot slot);
@@ -72,7 +73,8 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
     private void modifyFlySpeed(CallbackInfoReturnable<Float> cir) {
         cir.setReturnValue(PowerHolderComponent.modify(this, ModifyAirSpeedPowerType.class, cir.getReturnValue()));
     }
-
+    //TODO Move to correct mixin - Farpo
+/*
     @ModifyVariable(method = "eatFood", at = @At("HEAD"), argsOnly = true)
     private ItemStack apoli$modifyEatenStack(ItemStack original) {
 
@@ -156,9 +158,10 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
 
     }
+*/
 
     @Inject(method = "damage", at = @At(value = "RETURN", ordinal = 3), cancellable = true)
-    private void allowDamageIfModifyingPowersExist(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void allowDamageIfModifyingPowersExist(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
 
         boolean hasModifyingPower = false;
 
@@ -168,7 +171,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
 
         hasModifyingPower |= PowerHolderComponent.hasPowerType(this, ModifyDamageTakenPowerType.class, mdtp -> mdtp.doesApply(source, amount));
-        if (hasModifyingPower) cir.setReturnValue(super.damage(source, amount));
+        if (hasModifyingPower) cir.setReturnValue(super.damage(world, source, amount));
 
     }
 
@@ -226,12 +229,12 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
     private void restoreKeptInventory(CallbackInfo ci) {
         PowerHolderComponent.withPowerTypes(this, KeepInventoryPowerType.class, p -> true, KeepInventoryPowerType::restoreSavedItems);
     }
-
-    @ModifyReturnValue(method = "canEquip", at = @At("RETURN"))
+    //TODO I think this was moved elsewhere but anyway marking it - Farpo
+    /*@ModifyReturnValue(method = "canEquip", at = @At("RETURN"))
     private boolean apoli$preventArmorDispensing(boolean original, ItemStack stack) {
         return original
             && !PowerHolderComponent.hasPowerType(this, RestrictArmorPowerType.class, p -> p.doesRestrict(stack, this.getPreferredEquipmentSlot(stack)));
-    }
+    }*/
 
     @WrapOperation(method = "interact", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;interact(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;"))
     private ActionResult apoli$beforeEntityUse(Entity entity, PlayerEntity player, Hand hand, Operation<ActionResult> original, @Share("zeroPriority$onEntity") LocalRef<ActionResult> sharedZeroPriority$onEntity) {
@@ -293,7 +296,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                 continue;
             }
 
-            if (previousResult.shouldSwingHand()) {
+            if (previousResult instanceof ActionResult.Success success && success.swingSource() != ActionResult.SwingSource.NONE) {
                 this.swingHand(hand);
             }
 
@@ -358,7 +361,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
 
         }
 
-        if (newResult.shouldSwingHand()) {
+        if (newResult instanceof ActionResult.Success success && success.swingSource() != ActionResult.SwingSource.NONE) {
             this.swingHand(hand);
         }
 
@@ -366,11 +369,6 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
             ? newResult
             : original;
 
-    }
-
-    @ModifyExpressionValue(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;isSprinting()Z"))
-    private boolean apoli$shouldApplySprintJumpExhaustion(boolean original) {
-        return original && this.apoli$applySprintJumpEffects();
     }
 
     @WrapWithCondition(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;updatePose()V"))
