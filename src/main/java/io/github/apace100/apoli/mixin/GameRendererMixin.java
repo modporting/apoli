@@ -20,10 +20,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,11 +50,6 @@ public abstract class GameRendererMixin {
     MinecraftClient client;
 
     @Shadow
-    protected abstract void loadPostProcessor(Identifier identifier);
-
-    @Shadow
-    PostEffectProcessor postProcessor;
-    @Shadow
     private boolean postProcessorEnabled;
 
     @Shadow
@@ -60,11 +57,14 @@ public abstract class GameRendererMixin {
     private ResourceManager resourceManager;
 
     @Shadow
-    public abstract void disablePostProcessor();
+    public abstract void togglePostProcessorEnabled();
 
+    @Shadow public abstract void clearPostProcessor();
+
+    @Shadow @Nullable private Identifier postProcessorId;
     @Unique
     private Identifier apoli$currentlyLoadedShader;
-
+    //TODO Find out if postprocessor changes broke something
     @Inject(at = @At("TAIL"), method = "onCameraEntitySet")
     private void apoli$loadShaderFromPowerOnCameraEntity(Entity entity, CallbackInfo ci) {
 
@@ -76,7 +76,7 @@ public abstract class GameRendererMixin {
 
                 Identifier shaderLocation = p.getShaderLocation();
 
-                loadPostProcessor(shaderLocation);
+                postProcessorId = shaderLocation;
                 apoli$currentlyLoadedShader = shaderLocation;
 
             });
@@ -94,7 +94,7 @@ public abstract class GameRendererMixin {
             .ifPresent(p -> {
                 Identifier shaderLocation = p.getShaderLocation();
                 if (shaderLocation != apoli$currentlyLoadedShader) {
-                    loadPostProcessor(shaderLocation);
+                    postProcessorId = shaderLocation;
                     apoli$currentlyLoadedShader = shaderLocation;
                 }
             });
@@ -102,8 +102,8 @@ public abstract class GameRendererMixin {
         //  Remove the currently loaded shader if the entity doesn't have any shader powers
         if (!PowerHolderComponent.hasPowerType(client.getCameraEntity(), ShaderPowerType.class) && apoli$currentlyLoadedShader != null) {
 
-            if (postProcessor != null) {
-                disablePostProcessor();
+            if (postProcessorId != null) {
+                clearPostProcessor();
             }
 
             postProcessorEnabled = false;
@@ -219,11 +219,14 @@ public abstract class GameRendererMixin {
         return set;
     }
 
-    @ModifyExpressionValue(method = "method_18144", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;canHit()Z"))
-    private static boolean apoli$preventEntitySelection(boolean original, Entity target) {
+    @ModifyExpressionValue(method = "findCrosshairTarget", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ProjectileUtil;raycast(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/function/Predicate;D)Lnet/minecraft/util/hit/EntityHitResult;"))
+    private EntityHitResult apoli$preventEntitySelection(EntityHitResult original) {
         Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
-        return original
-            && !PowerHolderComponent.hasPowerType(cameraEntity, PreventEntitySelectionPowerType.class, p -> p.doesPrevent(target));
+        if(original != null ){
+            Entity target = original.getEntity();
+            return !PowerHolderComponent.hasPowerType(cameraEntity, PreventEntitySelectionPowerType.class, p -> p.doesPrevent(target)) ? original : null;
+        }
+        return null;
     }
 
 }
