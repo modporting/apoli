@@ -2,6 +2,7 @@ package io.github.apace100.apoli.component;
 
 import com.google.common.collect.Lists;
 import io.github.apace100.apoli.Apoli;
+import io.github.apace100.apoli.access.PowerHoldingEntityRenderState;
 import io.github.apace100.apoli.integration.ModifyValueCallback;
 import io.github.apace100.apoli.networking.packet.s2c.SyncBulkPowerDataS2CPacket;
 import io.github.apace100.apoli.networking.packet.s2c.SyncPowerDataS2CPacket;
@@ -358,7 +359,29 @@ public interface PowerHolderComponent extends AutoSyncedComponent, CommonTicking
             .filter(PowerType::isActive)
             .anyMatch(typeFilter);
     }
+    static <T extends PowerType> boolean hasPowerType(PowerHoldingEntityRenderState renderState, Class<T> powerClass) {
+        return hasPowerType(renderState, powerClass, p -> true);
+    }
 
+    static <T extends PowerType> boolean hasPowerType(PowerHoldingEntityRenderState renderState, Class<T> typeClass, @NotNull Predicate<T> typeFilter) {
+        return renderState.apoli$getPowerHolder()
+                .stream()
+                .map(PowerHolderComponent::getPowerTypes)
+                .flatMap(Collection::stream)
+                .filter(typeClass::isInstance)
+                .map(typeClass::cast)
+                .filter(PowerType::isActive)
+                .anyMatch(typeFilter);
+    }
+    static <T extends PowerType> List<T> getPowerTypes(PowerHoldingEntityRenderState state, Class<T> powerClass) {
+        return getPowerTypes(state, powerClass, false);
+    }
+
+    static <T extends PowerType> List<T> getPowerTypes(PowerHoldingEntityRenderState state, Class<T> powerClass, boolean includeInactive) {
+        return state.apoli$getPowerHolder()
+                .map(powerComponent -> powerComponent.getPowerTypes(powerClass, includeInactive))
+                .orElse(Lists.newArrayList());
+    }
     static <T extends ValueModifyingPowerType> float modify(Entity entity, Class<T> powerClass, float baseValue) {
         return (float) modify(entity, powerClass, (double) baseValue, p -> true, p -> {});
     }

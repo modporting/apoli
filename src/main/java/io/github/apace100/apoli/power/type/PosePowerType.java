@@ -8,6 +8,7 @@ import io.github.apace100.apoli.power.PowerConfiguration;
 import io.github.apace100.apoli.util.ArmPoseReference;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import org.jetbrains.annotations.NotNull;
@@ -77,6 +78,10 @@ public class PosePowerType extends PowerType implements Prioritized<PosePowerTyp
     public static boolean hasEntityPose(Entity entity, EntityPose entityPose) {
         return entity instanceof ModifiedPoseHolder poseHolder
             && poseHolder.apoli$getModifiedEntityPose().map(entityPose::equals).orElse(false);
+    }
+    public static boolean hasEntityPose(LivingEntityRenderState state, EntityPose entityPose) {
+        return state instanceof ModifiedPoseHolder poseHolder
+                && poseHolder.apoli$getModifiedEntityPose().map(entityPose::equals).orElse(false);
     }
 
 }

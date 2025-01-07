@@ -114,6 +114,7 @@
     "LayeredDrawerAccessor",
     "LightmapTextureManagerMixin",
     "LivingEntityRendererMixin",
+    "LivingEntityRenderStateMixin",
     "MinecraftClientMixin",
     "PlayerEntityRendererMixin",
     "RecipeResultCollectionMixin",

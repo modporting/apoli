@@ -44,7 +44,7 @@ public abstract class EntityMixinClient implements PseudoRenderDataHolder {
             this.apoli$pseudoDeathTicks = 0;
         }
 
-        if (PosePowerType.hasEntityPose(thisAsEntity, EntityPose.FALL_FLYING)) {
+        if (PosePowerType.hasEntityPose(thisAsEntity, EntityPose.GLIDING)) {
             ++this.apoli$pseudoFallFlyingTicks;
         }
 
